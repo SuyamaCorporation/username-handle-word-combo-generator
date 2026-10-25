@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Username Handle Generator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+<div class="max-w-2xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-bold text-center mb-1 text-indigo-400">Username Generator</h1>
+  <p class="text-center text-gray-400 text-sm mb-8">Combine adjectives + nouns into unique handles</p>
+
+  <div class="bg-gray-900 rounded-2xl p-6 mb-6 space-y-4">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="styleFilter" class="block text-sm font-medium text-gray-300 mb-1">Style</label>
+        <select id="styleFilter" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="all">All Styles</option>
+          <option value="cute">Cute</option>
+          <option value="edgy">Edgy</option>
+          <option value="tech">Tech</option>
+          <option value="nature">Nature</option>
+        </select>
+      </div>
+      <div>
+        <label for="maxLength" class="block text-sm font-medium text-gray-300 mb-1">Max Length</label>
+        <input type="number" id="maxLength" value="20" min="6" max="32" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" id="addNumber" class="w-4 h-4 rounded accent-indigo-500">
+        <span class="text-sm text-gray-300">Add number suffix</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" id="useSeparator" class="w-4 h-4 rounded accent-indigo-500">
+        <span class="text-sm text-gray-300">Use underscore</span>
+      </label>
+    </div>
+    <button id="generateBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-colors">
+      Generate Usernames
+    </button>
+  </div>
+
+  <div id="results" class="space-y-2 mb-8"></div>
+
+  <div id="favSection" class="hidden">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold text-gray-200">Favorites</h2>
+      <button id="clearFavs" class="text-xs text-red-400 hover:text-red-300">Clear all</button>
+    </div>
+    <div id="favList" class="space-y-2"></div>
+  </div>
+</div>
+
+<script>
+const words = {
+  cute: {
+    adj: ["fluffy","pastel","bubbly","sunny","cozy","dreamy","wispy","bouncy","starry","rosy","glittery","velvet","honeydew","maple","cherry"],
+    noun: ["bunny","kitten","petal","cloud","mochi","sprout","dew","pudding","marshmallow","blossom","latte","cookie","ribbon","puffin","daisy"]
+  },
+  edgy: {
+    adj: ["void","cursed","phantom","shattered","grim","toxic","feral","hollow","neon","blood","dark","rogue","venom","stark","hex"],
+    noun: ["reaper","wraith","crypt","shard","abyss","vex","scythe","crow","thorn","dagger","marrow","gore","wrath","specter","claw"]
+  },
+  tech: {
+    adj: ["binary","cyber","quantum","neural","hyper","nano","crypto","delta","pixel","sigma","flux","atomic","turbo","ultra","meta"],
+    noun: ["node","core","stack","byte","cron","daemon","proxy","kernel","cache","socket","proto","nexus","vector","cipher","pulse"]
+  },
+  nature: {
+    adj: ["swift","silver","golden","wild","stone","iron","frost","ember","moss","cedar","tide","misty","amber","ashen","jade"],
+    noun: ["wolf","hawk","oak","storm","river","peak","ridge","pine","dusk","fjord","glade","brook","raven","lynx","crag"]
+  }
+};
+
+function getWordList(style, type) {
+  if (style === "all") {
+    return Object.values(words).flatMap(s => s[type]);
+  }
+  return words[style][type];
+}
+
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generate() {
+  const style = document.getElementById("styleFilter").value;
+  const maxLen = parseInt(document.getElementById("maxLength").value) || 20;
+  const addNum = document.getElementById("addNumber").checked;
+  const sep = document.getElementById("useSeparator").checked ? "_" : "";
+
+  const adjs = getWordList(style, "adj");
+  const nouns = getWordList(style, "noun");
+  const suffixes = [2,3,7,13,21,42,69,88,99,100,123,404,420,777,1337];
+
+  const generated = new Set();
+  let attempts = 0;
+  while (generated.size < 10 && attempts < 200) {
+    attempts++;
+    let name = randomItem(adjs) + sep + randomItem(nouns);
+    if (addNum) name += randomItem(suffixes);
+    if (name.length <= maxLen) generated.add(name);
+  }
+
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+  if (generated.size === 0) {
+    results.innerHTML = `<p class="text-center text-gray-500">No usernames fit within ${maxLen} characters. Try increasing the limit.</p>`;
+    return;
+  }
+  generated.forEach(name => {
+    results.appendChild(makeCard(name, false));
+  });
+}
+
+function makeCard(name, isFav) {
+  const div = document.createElement("div");
+  div.className = "flex items-center justify-between bg-gray-900 rounded-xl px-4 py-3 group";
+  div.innerHTML = `
+    <span class="font-mono text-indigo-300 text-lg">${name}</span>
+    <div class="flex gap-2">
+      <button aria-label="Copy ${name}" class="copyBtn text-gray-400 hover:text-white text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Copy</button>
+      ${isFav
+        ? `<button aria-label="Remove ${name} from favorites" class="removeFavBtn text-red-400 hover:text-red-300 text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Remove</button>`
+        : `<button aria-label="Save ${name} to favorites" class="saveFavBtn text-yellow-400 hover:text-yellow-300 text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">★ Save</button>`
+      }
+    </div>`;
+  div.querySelector(".copyBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(name).then(() => {
+      const btn = div.querySelector(".copyBtn");
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = "Copy", 1500);
+    });
+  });
+  if (!isFav) {
+    div.querySelector(".saveFavBtn").addEventListener("click", () => addFav(name));
+  } else {
+    div.querySelector(".removeFavBtn").addEventListener("click", () => removeFav(name));
+  }
+  return div;
+}
+
+function getFavs() {
+  return JSON.parse(localStorage.getItem("ug_favs") || "[]");
+}
+function saveFavs(arr) {
+  localStorage.setItem("ug_favs", JSON.stringify(arr));
+}
+function addFav(name) {
+  const favs = getFavs();
+  if (!favs.includes(name)) { favs.push(name); saveFavs(favs); }
+  renderFavs();
+}
+function removeFav(name) {
+  saveFavs(getFavs().filter(f => f !== name));
+  renderFavs();
+}
+function renderFavs() {
+  const favs = getFavs();
+  const section = document.getElementById("favSection");
+  const list = document.getElementById("favList");
+  list.innerHTML = "";
+  if (favs.length === 0) { section.classList.add("hidden"); return; }
+  section.classList.remove("hidden");
+  favs.forEach(name => list.appendChild(makeCard(name, true)));
+}
+
+document.getElementById("generateBtn").addEventListener("click", generate);
+document.getElementById("clearFavs").addEventListener("click", () => { saveFavs([]); renderFavs(); });
+renderFavs();
+generate();
+</script>
+</body>
+</html>
